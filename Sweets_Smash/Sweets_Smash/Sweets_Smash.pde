@@ -1,3 +1,8 @@
+//once match is made, move squares above down
+//make it so swap only works if match will be made - make a canSwap method
+//add check for no three in a rows
+
+
 // 2D Array of objects
 Cell[][] grid;
 
@@ -13,6 +18,7 @@ color orange = color(255,165,0);
 color purple = color(255,0,255);
 color green = color(0,255,0);
 color black = color(0);
+color white = color(255);
 
 
 // Number of columns and rows in the grid
@@ -21,12 +27,13 @@ int rows = 9;
 
 void setup() {
   size(500,500);
+  //fullScreen();
   
   grid = new Cell[cols][rows];
   for (int i = 0; i < cols; i++) {
     for (int j = 0; j < rows; j++) {
       // Initialize each object
-      grid[i][j] = new Cell(i*50+25,j*50+25,50,50,getRandomColor());
+      grid[i][j] = new Cell(i*50+(width/2)-225,j*50+(height/2)-225,50,50,getRandomColor());
       while(checkThreeInARow(i,j)){
         grid[i][j].c = getRandomColor(); 
       }
@@ -38,14 +45,16 @@ void draw() {
   background(255);
   // The counter variables i and j are also the column and row numbers and 
   // are used as arguments to the constructor for each object in the grid.  
-  //translate(25,25);
+  checkThreeInARow();
   for (int i = 0; i < cols; i++) {
     for (int j = 0; j < rows; j++) {
       // Display each object
       grid[i][j].display();
     }
   }
-  boolean check3 = checkThreeInARow();
+  if(lastpicked){
+   grid[lastpickedRow][lastpickedCol].display(); 
+  }
 }
 
 
@@ -58,6 +67,16 @@ void swapColor(int i1, int j1, int i2, int j2){
    }
 }
 
+boolean canSwap(int i1, int j1, int i2, int j2){
+  boolean result = true;
+  swapColor(i1,j1,i2,j2);
+  if(!checkThreeInARow()){
+    swapColor(i1,j1,i2,j2);
+    result = false;
+  }
+  return result;
+}
+
 
 
 void mousePressed(){
@@ -68,9 +87,11 @@ void mousePressed(){
       mouseX <= grid[i][j].x+grid[i][j].w && mouseY<=grid[i][j].y+grid[i][j].h){
         //if square has been selected already, swap with newly selected square
         if(lastpicked==true){
-          swapColor(i,j,lastpickedRow,lastpickedCol);
+          canSwap(i,j,lastpickedRow,lastpickedCol);
+          grid[lastpickedRow][lastpickedCol].picked = false;
           lastpicked=false;
         }else{
+          grid[i][j].picked = true;
           lastpickedRow = i;
           lastpickedCol = j;
           lastpicked = true;
@@ -98,19 +119,40 @@ color getRandomColor(){
 boolean checkThreeInARow(){
   boolean result = false;
   
-  
-  for (int i = 0; i < cols-2; i++) {
-    for (int j = 0; j < rows-2; j++) {
-      if(grid[i][j] !=null && grid[i+1][j] != null && grid[i+2][j] !=null){
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      
+      //check if three in a row to the right
+      if(i+2<grid.length){
         if(grid[i][j].c == grid[i+1][j].c && grid[i+1][j].c == grid[i+2][j].c){
-          grid[i][j].c = black;
-          grid[i+1][j].c = black;
-          grid[i+2][j].c = black;
+          if(checkFourInARow(i,j,1)){
+            if(checkFiveInARow(i,j,1)){
+              grid[i+4][j].c=white;
+            }
+            grid[i+3][j].c=white;
+          }
+           grid[i][j].c = white;
+          grid[i+1][j].c = white;
+          grid[i+2][j].c = white;
           result = true;
         }
       }
       
-      
+      //check if three in a row downwards
+      if(j+2<grid.length){
+        if(grid[i][j].c == grid[i][j+1].c && grid[i][j+1].c == grid[i][j+2].c){
+          if(checkFourInARow(i,j,2)){
+            if(checkFiveInARow(i,j,2)){
+              grid[i][j+4].c=white;
+            }
+            grid[i][j+3].c=white;
+          }
+          grid[i][j].c = white;
+          grid[i][j+1].c = white;
+          grid[i][j+2].c = white;
+          result = true;
+        }
+      }
     }
   }
   
@@ -119,13 +161,76 @@ boolean checkThreeInARow(){
 
 boolean checkThreeInARow(int i, int j){
   boolean result = false;
-  if(i<7 && j<7 && grid[i][j] !=null && grid[i+1][j] != null && grid[i+2][j] !=null){
+  //check if three in a row to the right
+  if(i+2<grid.length && grid[i+1][j]!=null && grid[i+2][j]!=null){
     if(grid[i][j].c == grid[i+1][j].c && grid[i+1][j].c == grid[i+2][j].c){
-      grid[i][j].c = black;
-      grid[i+1][j].c = black;
-      grid[i+2][j].c = black;
-      result = true;
+        result = true;
+      }
     }
-  }
+    //check if three in a row downwards
+    if(j+2<grid.length && grid[i][j+1]!=null && grid[i][j+2]!=null){
+      if(grid[i][j].c == grid[i][j+1].c && grid[i][j+1].c == grid[i][j+2].c){
+        result = true;
+      }
+    }
+    //check if three in a row to the left
+    if(i-2>=0 && grid[i-1][j]!=null && grid[i-2][j]!=null){
+      if(grid[i][j].c == grid[i-1][j].c && grid[i-1][j].c == grid[i-2][j].c){
+        result = true;
+      }
+    }
+    //check if three in a row up
+    if(j-2>=0 && grid[i][j-1]!=null && grid[i][j-2]!=null){
+      if(grid[i][j].c == grid[i][j-1].c && grid[i][j-1].c == grid[i][j-2].c){
+        result = true;
+      }
+    }
+
+  return result;
+}
+
+boolean checkFourInARow(int i, int j, int dir){
+  boolean result = false;
+  
+   //check if four in a row to the right
+   if(dir == 1){
+    if(i+3<grid.length && grid[i+3][j]!=null){
+      if(grid[i][j].c == grid[i+3][j].c){
+          result = true;
+        }
+      }
+   }
+   //check if four in a row downwards
+   if(dir==2){
+      if(j+3<grid.length && grid[i][j+3]!=null){
+        if(grid[i][j].c == grid[i][j+3].c){
+          result = true;
+        }
+      }
+   }
+  
+  return result;
+}
+
+boolean checkFiveInARow(int i, int j, int dir){
+  boolean result = false;
+  
+   //check if five in a row to the right
+   if(dir == 1){
+    if(i+4<grid.length && grid[i+4][j]!=null){
+      if(grid[i][j].c == grid[i+4][j].c){
+          result = true;
+        }
+      }
+   }
+   //check if five in a row downwards
+   if(dir==2){
+      if(j+4<grid.length && grid[i][j+4]!=null){
+        if(grid[i][j].c == grid[i][j+4].c){
+          result = true;
+        }
+      }
+   }  
+ 
   return result;
 }
